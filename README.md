@@ -1,9 +1,8 @@
 mdplifs
 ==============================
 [//]: # (Badges)
-[![Travis Build Status](https://travis-ci.org/REPLACE_WITH_OWNER_ACCOUNT/mdplifs.png)](https://travis-ci.org/REPLACE_WITH_OWNER_ACCOUNT/mdplifs)
-[![AppVeyor Build status](https://ci.appveyor.com/api/projects/status/REPLACE_WITH_APPVEYOR_LINK/branch/master?svg=true)](https://ci.appveyor.com/project/REPLACE_WITH_OWNER_ACCOUNT/mdplifs/branch/master)
-[![codecov](https://codecov.io/gh/REPLACE_WITH_OWNER_ACCOUNT/mdplifs/branch/master/graph/badge.svg)](https://codecov.io/gh/REPLACE_WITH_OWNER_ACCOUNT/mdplifs/branch/master)
+[![Travis Build Status](https://travis-ci.org/dww100/mdplifs.png)](https://travis-ci.org/dww100/mdplifs)
+[![codecov](https://codecov.io/gh/dww100/mdplifs/branch/master/graph/badge.svg)](https://codecov.io/gh/dww100/mdplifs/branch/master)
 
 Tool to calculate protein-ligand interaction fingerprints from molecular dynamics trajectories
 
