@@ -14,8 +14,7 @@ class Fingerprinter():
         selection_text = f'({receptor_selection}) or ({ligand_selection})'
 
         if water_cutoff > 0:
-            # TODO: Allow water molecules to be added - to allow
-            # future water bridged interaction checking
+            # TODO: Allow water molecules to be added
             pass
 
         selected_atoms = traj.select(selection_text)
@@ -32,6 +31,15 @@ class Fingerprinter():
 
         self.get_hbonds()
         self.get_hydrophobic_interactions()
+
+        # TODO: Salt bridge
+        # TODO: Pi stacking
+        # TODO: Pi cation (paro/laro)
+        # TODO: Halogen bonds
+        # TODO: Unpaired ligand hbond donors
+        # TODO: Unpaired ligand hbond acceptors
+        # TODO: Water bridged interations
+        # TODO: Metal complex interations
 
     def get_hbonds(self):
 
