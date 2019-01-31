@@ -76,10 +76,116 @@ class Fingerprinter:
 
 
 class LigandFingerprinter:
+    """
 
-    def __init__(self):
+    Ballester, P. J. and Richards, W. G. (2007),
+    Ultrafast shape recognition to search compound databases for similar molecular shapes.
+    J. Comput. Chem., 28: 1711-1723. doi:10.1002/jcc.20681
 
-        # TODO: Get rdkit fingerprint of ligand
-        # TODO: Calculate dynamic fingerprint
 
-        pass
+    """
+
+    def __init__(self, traj, ligand_selection='resname LIG',
+                 n_moments=10):
+
+        if n_moments < 2:
+            raise ValueError('n_moments must be 2 or greater')
+
+        self.n_moments = n_moments
+
+        ligand_atoms = traj.topology.select(ligand_selection)
+        self.traj = traj[frames].atomslice[ligand_atoms]
+        self.top = self.traj.topology
+
+        self.ctds = None
+        self.csts = None
+        self.fcts = None
+        self.ftfs = None
+
+        self.ctd_frame_moments = None
+        self.cst_frame_moments = None
+        self.fct_frame_moments = None
+        self.ftf_frame_moments = None
+
+        self.ctd_moments = None
+        self.cst_moments = None
+        self.fct_moments = None
+        self.ftf_moments = None
+
+        self.calculate_distance_metrics()
+
+        n_moments = self.n_moments
+
+        self.ctd_frame_moments = self._calculate_metric_moments(self.ctds,
+                                                                n_moments)
+        self.cst_frame_moments = self._calculate_metric_moments(self.csts,
+                                                                n_moments)
+        self.fct_frame_moments = self._calculate_metric_moments(self.fcts,
+                                                                n_moments)
+        self.ftf_frame_moments = self._calculate_metric_moments(self.ftfs,
+                                                                n_moments)
+
+        self.ctd_metrics = np.array(self.ctd_frame_moments).mean(axis=0)
+        self.cst_metrics = np.array(self.cst_frame_moments).mean(axis=0)
+        self.fct_metrics = np.array(self.fct_frame_moments).mean(axis=0)
+        self.ftf_metrics = np.array(elf.ftf_frame_moments).mean(axis=0)
+
+    def calculate_centre_points(self):
+
+        traj = self.traj
+
+        centres = np.zeros((traj.n_frames, 3))
+
+        for i, x in enumerate(traj.xyz):
+            centres[i, :] = x.mean(axis=0)
+
+        return centres
+
+    def _calculate_distance_difference(self, ref_coords):
+
+        traj = self.traj
+
+        metrics = np.zeros((traj.n_frames, traj.n_atoms))
+
+        for frame, coords in enumerate(traj.xyz):
+            # Compute distance between each coordinate and reference coordinate
+            metrics[frame, :] = np.apply_along_axis(distance.euclidean, 1,
+                                                    coords, ref_coords[frame])
+
+        return metrics
+
+    def calculate_distance_metrics(self):
+
+        centres = self.calculate_centre_points()
+
+        # Calculate distance of every atom to the centre in each frame
+        ctds = self._calculate_distance_difference(centres)
+        self.ctds = ctds
+
+        # Distances of every atom to the closest atom to the centre in each frame
+        closest_atom_to_centre = np.array([frame_ctds[np.argmin(frame_ctds)]
+                                           for frame_ctds in ctds])
+        self.csts = self._calc_dist_metric(closest_atom_to_centre)
+
+        # Distances of every atom to the furthest atom to the centre in each frame
+        furthest_atom_to_centre = np.array([frame_ctds[np.argmax(frame_ctds)]
+                                            for frame_ctds in ctds])
+        self.fcts = self._calc_dist_metric(furthest_atom_to_centre)
+
+        # Distances of every atom to furthest atom from teh furhest atom for the centre
+        furthest_from_furthest_atom = np.array([frame_fcts[np.argmax(frame_fcts)]
+                                                for frame_fcts in furthest_atom_to_centre])
+
+        self.ftfs = self._calc_dist_metric(furthest_from_furthest_atom)
+
+    @staticmethod
+    def _calculate_metric_moments(traj_metric, n_moments=10):
+
+        moments = []
+
+        for frame_values in traj_metric:
+            frame_mean = np.mean(frame_values)
+            moments.append(np.append(frame_mean, s.moment(frame_values, range(2, n_moments))))
+
+        return moments
+
