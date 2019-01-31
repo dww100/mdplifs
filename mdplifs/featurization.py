@@ -4,7 +4,7 @@ import mdtraj as md
 from .topology import FeatureTopology
 
 
-class Fingerprinter():
+class Fingerprinter:
 
     def __init__(self, traj, frames, ligand_selection='resname LIG',
                  receptor_selection='protein', water_cutoff=0):
@@ -72,3 +72,12 @@ class Fingerprinter():
 
         for interactions in distances:
             hydrophobic_interactions.append(interactions[interactions <= 0.36])
+
+class LigandFingerprinter:
+
+    def __init__(self):
+
+        # TODO: Get rdkit fingerprint of ligand
+        # TODO: Calculate dynamic fingerprint
+
+        pass
