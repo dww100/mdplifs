@@ -17,9 +17,10 @@ class Fingerprinter:
             # TODO: Allow water molecules to be added
             pass
 
-        selected_atoms = traj.select(selection_text)
+        topology = traj.topology
+        selected_atoms = topology.select(selection_text)
         self.traj = traj[frames].atomslice[selected_atoms]
-        self.top = FeatureTopology(traj.topology, ligand_selection)
+        self.top = FeatureTopology(topology, ligand_selection)
 
         self.ligand_donor_hbonds = []
         self.receptor_donor_hbonds = []
