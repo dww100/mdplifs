@@ -118,6 +118,9 @@ class LigandFingerprinter:
         self.fct_metrics = np.array(self.fct_frame_moments).mean(axis=0)
         self.ftf_metrics = np.array(self.ftf_frame_moments).mean(axis=0)
 
+        self.fingerprint = np.concatenate((self.ctd_metrics, self.cst_metrics,
+                                           self.fct_metrics, self.ftf_metrics))
+
     def calculate_centre_points(self):
 
         traj = self.traj
