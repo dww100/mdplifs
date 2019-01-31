@@ -94,7 +94,7 @@ class LigandFingerprinter:
         self.n_moments = n_moments
 
         ligand_atoms = traj.topology.select(ligand_selection)
-        self.traj = traj[frames].atomslice[ligand_atoms]
+        self.traj = traj.atomslice[ligand_atoms]
         self.top = self.traj.topology
 
         self.ctds = None
@@ -102,19 +102,7 @@ class LigandFingerprinter:
         self.fcts = None
         self.ftfs = None
 
-        self.ctd_frame_moments = None
-        self.cst_frame_moments = None
-        self.fct_frame_moments = None
-        self.ftf_frame_moments = None
-
-        self.ctd_moments = None
-        self.cst_moments = None
-        self.fct_moments = None
-        self.ftf_moments = None
-
         self.calculate_distance_metrics()
-
-        n_moments = self.n_moments
 
         self.ctd_frame_moments = self._calculate_metric_moments(self.ctds,
                                                                 n_moments)
@@ -128,7 +116,7 @@ class LigandFingerprinter:
         self.ctd_metrics = np.array(self.ctd_frame_moments).mean(axis=0)
         self.cst_metrics = np.array(self.cst_frame_moments).mean(axis=0)
         self.fct_metrics = np.array(self.fct_frame_moments).mean(axis=0)
-        self.ftf_metrics = np.array(elf.ftf_frame_moments).mean(axis=0)
+        self.ftf_metrics = np.array(self.ftf_frame_moments).mean(axis=0)
 
     def calculate_centre_points(self):
 
