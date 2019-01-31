@@ -77,12 +77,25 @@ class Fingerprinter:
 
 class LigandFingerprinter:
     """
+    Create a ligand fingerprint based on the shape over an MD trajectory.
+    This is based on the work of Ash and Fourches which generalized the shape
+    metrics defined by Ballester et al.
+
+    Shape is defined by the set of all atomic distances from four molecular locations:
+    the molecular centroid (ctd), the closest atom to ctd (cst),
+    the farthest atom to ctd (fct), and the farthest atom to fct (ftf).
+
+    The shape is defined by the moments of the distribution of these values in each frame.
+    Each moment is averaged to give a trajectory value in the fingerprint.
 
     Ballester, P. J. and Richards, W. G. (2007),
     Ultrafast shape recognition to search compound databases for similar molecular shapes.
     J. Comput. Chem., 28: 1711-1723. doi:10.1002/jcc.20681
 
-
+    Ash, J. and Fourches, D. (2017),
+    Characterizing the Chemical Space of ERK2 Kinase Inhibitors Using Descriptors Computed
+    from Molecular Dynamics Trajectories
+    J. Chem. Inf. Model., 57 (6): 1286-1299. DOI: 10.1021/acs.jcim.7b00048
     """
 
     def __init__(self, traj, ligand_selection='resname LIG',
