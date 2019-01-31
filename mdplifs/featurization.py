@@ -73,6 +73,7 @@ class Fingerprinter:
         for interactions in distances:
             hydrophobic_interactions.append(interactions[interactions <= 0.36])
 
+
 class LigandFingerprinter:
 
     def __init__(self):
