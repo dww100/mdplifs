@@ -29,7 +29,7 @@ def residue_to_rdkit_mol(residue):
 
         rd_atom = Chem.Atom(atom.element.atomic_number)
         rd_atom.SetProp('original_name', atom.name)
-        rd_atom.SetProp('md_index', atom.index)
+        rd_atom.SetProp('md_index', str(atom.index))
         editable.AddAtom(rd_atom)
 
         idx_map[idx] = rd_idx
