@@ -33,9 +33,6 @@ class FeatureTopology(md.Topology):
                     new_atom.bonded = []
                     new_atom.bonds = []
 
-                    new_atom.h_acceptor = False
-                    new_atom.h_donor = False
-                    new_atom.halogen_acceptor = False
                     new_atom.in_ring = False
                     new_atom.metal_binder = self._is_metal_binder(atom)
 
@@ -56,9 +53,10 @@ class FeatureTopology(md.Topology):
                 new_a2.bonded.append(new_a1)
                 new_a2.bonds.append(new_bond)
 
-        # Add hydrophobicity check
+        # hydrophobicity and halogen acceptor checks
         for atom in self.atoms:
             atom.hydrophobic = self._is_hydrophobic(atom)
+            atom.halogen_acceptor = self._is_halogen_acceptor(atom)
 
         # TODO: Add ring check(s)
 
@@ -95,6 +93,19 @@ class FeatureTopology(md.Topology):
                     negative = True
 
         return positive, negative
+
+    @staticmethod
+    def _is_halogen_acceptor(atom):
+
+        acceptor = False
+
+        if atom.residue.is_protein and atom.element.symbol in ['O', 'P', 'N', 'S']:
+
+            if len(atom.bonded) == 1 and atom.bonded[0].element.symbol in ['C', 'P', 'S']:
+
+                acceptor = True
+
+        return acceptor
 
     @staticmethod
     def _is_metal_binder(atom):
