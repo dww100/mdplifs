@@ -27,6 +27,7 @@ class Fingerprinter:
         self.ligand_donor_hbonds = []
         self.receptor_donor_hbonds = []
         self.hydrophobic_interactions = []
+        self.halogen_bonds = []
 
         self.generatefingerprint()
 
@@ -69,12 +70,35 @@ class Fingerprinter:
         receptor_atoms = [idx for idx in receptor_idxs if atom(idx).hydrophobic]
         ligand_atoms = [idx for idx in ligand_idxs if atom(idx).hydrophobic]
 
+        n_ligand = len(ligand_atoms)
+
         atom_pairs = itertools.product(receptor_atoms, ligand_atoms)
 
         distances = md.compute_distances(self.traj, atom_pairs)
 
         for interactions in distances:
-            hydrophobic_interactions.append(interactions[interactions <= 0.36])
+            idxs = np.where(interactions <= 0.36)[0]
+            hydrophobic_interactions.append([(receptor_atoms[x // n_ligand],
+                                              ligand_atoms[x % n_ligand]) for x in idxs])
+
+    def get_halogen_bonds(self):
+
+        halogen_bonds = self.halogen_bonds
+        receptor_idxs = self.top.receptor_idxs
+        ligand_idxs = self.top.ligand_idxs
+        atom = self.top.atom
+
+        acceptor_atoms = [idx for idx in receptor_idxs if atom(idx).hydrophobic]
+        donor_atoms = [idx for idx in ligand_idxs if atom(idx).hydrophobic]
+
+        atom_pairs = itertools.product(acceptor_atoms, donor_atoms)
+
+        distances = md.compute_distances(self.traj, atom_pairs)
+
+        for interactions in distances:
+            contacts = interactions[interactions <= 0.36]
+
+
 
 
 class LigandFingerprinter:
