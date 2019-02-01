@@ -30,14 +30,17 @@ class FeatureTopology(md.Topology):
 
                     new_atom = self._atoms[-1]
 
-                    new_atom.bonded = []
-                    new_atom.bonds = []
-
-                    new_atom.in_ring = False
                     new_atom.metal_binder = self._is_metal_binder(atom)
 
                     (new_atom.positive,
                      new_atom.negative) = self._is_charged(atom)
+
+                    new_atom.in_ring = False
+                    new_atom.halogen_acceptor = False
+                    new_atom.halogen_donor = False
+
+                    new_atom.bonded = []
+                    new_atom.bonds = []
 
             for bond in topology.bonds:
                 a1, a2 = bond
@@ -59,6 +62,8 @@ class FeatureTopology(md.Topology):
 
             if atom.index in self.receptor_idxs:
                 atom.halogen_acceptor = self._is_halogen_acceptor(atom)
+            elif atom.index in self.ligand_idxs:
+                atom.halogen_donor = self._is_halogen_donor(atom)
 
         # TODO: Add ring check(s)
 
@@ -108,6 +113,19 @@ class FeatureTopology(md.Topology):
                 acceptor = True
 
         return acceptor
+
+    @staticmethod
+    def _is_halogen_donor(atom):
+
+        donor = False
+
+        if atom.element.symbol in ['F', 'Cl', 'Br', 'I']:
+
+            if len(atom.bonded) == 1 and atom.bonded[0].element.symbol == 'C':
+
+                donor = True
+
+        return donor
 
     @staticmethod
     def _is_metal_binder(atom):
