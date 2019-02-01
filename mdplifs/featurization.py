@@ -1,6 +1,8 @@
 import itertools
 import numpy as np
 import mdtraj as md
+from scipy.spatial import distance
+import scipy.stats as s
 from .topology import FeatureTopology
 
 
