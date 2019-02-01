@@ -56,7 +56,7 @@ class FeatureTopology(md.Topology):
         # hydrophobicity and halogen acceptor checks
         for atom in self.atoms:
             atom.hydrophobic = self._is_hydrophobic(atom)
-            
+
             if atom.index in self.receptor_idxs:
                 atom.halogen_acceptor = self._is_halogen_acceptor(atom)
 
