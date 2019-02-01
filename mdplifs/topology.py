@@ -56,7 +56,9 @@ class FeatureTopology(md.Topology):
         # hydrophobicity and halogen acceptor checks
         for atom in self.atoms:
             atom.hydrophobic = self._is_hydrophobic(atom)
-            atom.halogen_acceptor = self._is_halogen_acceptor(atom)
+            
+            if atom.index in self.receptor_idxs:
+                atom.halogen_acceptor = self._is_halogen_acceptor(atom)
 
         # TODO: Add ring check(s)
 
@@ -99,7 +101,7 @@ class FeatureTopology(md.Topology):
 
         acceptor = False
 
-        if atom.residue.is_protein and atom.element.symbol in ['O', 'P', 'N', 'S']:
+        if atom.element.symbol in ['O', 'P', 'N', 'S']:
 
             if len(atom.bonded) == 1 and atom.bonded[0].element.symbol in ['C', 'P', 'S']:
 
