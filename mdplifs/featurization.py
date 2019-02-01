@@ -91,12 +91,16 @@ class Fingerprinter:
         acceptor_atoms = [idx for idx in receptor_idxs if atom(idx).hydrophobic]
         donor_atoms = [idx for idx in ligand_idxs if atom(idx).hydrophobic]
 
+        n_donors = len(donor_atoms)
+
         atom_pairs = itertools.product(acceptor_atoms, donor_atoms)
 
         distances = md.compute_distances(self.traj, atom_pairs)
 
         for interactions in distances:
-            contacts = interactions[interactions <= 0.36]
+            idxs = np.where(interactions <= 0.36)[0]
+            candidate_bonds = [(atom(acceptor_atoms[x // n_donors]),
+                                atom(donor_atoms[x % n_donors])) for x in idxs]
 
 
 
