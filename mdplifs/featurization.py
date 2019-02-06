@@ -36,15 +36,16 @@ class Fingerprinter:
 
         self.get_hbonds()
         self.get_hydrophobic_interactions()
+        self.get_halogen_bonds()
 
         # TODO: Salt bridge
         # TODO: Pi stacking
         # TODO: Pi cation (paro/laro)
-        # TODO: Halogen bonds
         # TODO: Unpaired ligand hbond donors
         # TODO: Unpaired ligand hbond acceptors
         # TODO: Water bridged interations
         # TODO: Metal complex interations
+        # TODO: Strip double counting of bonds
 
     def get_hbonds(self):
 
@@ -152,7 +153,7 @@ class Fingerprinter:
 
                 if (is_acceptable_angle(candidate_angles[0], acceptor_angle, tolerance) and
                    is_acceptable_angle(candidate_angles[1], donor_angle, tolerance)):
-                    
+
                     bonds.append(candidate_bonds[tmp_idx])
 
             halogen_bonds.append(bonds)
