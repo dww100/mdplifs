@@ -94,8 +94,6 @@ class FeatureTopology(md.Topology):
 
         # TODO: Add ring check(s)
 
-        # TODO: Utility checks for halogen bonds
-
     @staticmethod
     def _is_hydrophobic(atom):
 
