@@ -129,8 +129,6 @@ class FeatureTopology(md.Topology):
     @staticmethod
     def _is_charged_ligand(atom, tolerance=0.1):
 
-        residue = atom.residue
-
         positive = False
         negative = False
 
