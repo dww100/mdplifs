@@ -4,7 +4,8 @@ import mdtraj as md
 
 class FeatureTopology(md.Topology):
 
-    def __init__(self, topology, ligand_selection='resname LIG'):
+    def __init__(self, topology, prmtop_path='build/complex.prmtop',
+                 ligand_selection='resname LIG', charge_tolerance=0.1):
 
         super().__init__()
 
@@ -17,6 +18,22 @@ class FeatureTopology(md.Topology):
         self.receptor_idxs = topology.select('protein')
         self.complex_idxs = np.concatenate((self.receptor_idxs, self.ligand_idxs))
 
+        charges = []
+        in_charges = False
+
+        with open(prmtop_path) as infile:
+            for line in infile:
+                if in_charges:
+                    if line.startswith('%FORMAT'):
+                        continue
+                    elif line.startswith('%FLAG'):
+                        break
+                    else:
+                        # Note: use conversion factor to get electron charge units
+                        charges += [float(x) / 18.2223 for x in line.split()]
+                elif line.startswith('%FLAG CHARGE'):
+                    in_charges = True
+
         for chain in topology.chains:
 
             c = self.add_chain()
@@ -26,14 +43,24 @@ class FeatureTopology(md.Topology):
                 r = self.add_residue(residue.name, c, residue.resSeq, residue.segment_id)
 
                 for atom in residue.atoms:
+
                     self.add_atom(atom.name, atom.element, r, serial=atom.serial)
 
                     new_atom = self._atoms[-1]
 
+                    new_atom.charge = charges[new_atom.index]
+
                     new_atom.metal_binder = self._is_metal_binder(atom)
 
-                    (new_atom.positive,
-                     new_atom.negative) = self._is_charged(atom)
+                    if residue.is_protein:
+
+                        (new_atom.positive,
+                         new_atom.negative) = self._is_charged_protein(atom)
+
+                    elif new_atom.index in self.ligand_idxs:
+                        (new_atom.positive,
+                         new_atom.negative) = self._is_charged_ligand(atom, charge_tolerance)
+                        pass
 
                     new_atom.in_ring = False
                     new_atom.halogen_acceptor = False
@@ -83,21 +110,34 @@ class FeatureTopology(md.Topology):
         return hydrophobic
 
     @staticmethod
-    def _is_charged(atom):
+    def _is_charged_protein(atom):
 
         residue = atom.residue
 
         positive = False
         negative = False
 
-        if residue.is_protein:
+        if atom.element.symbol == 'N' and residue.name in ['ARG', 'HIS', 'LYS']:
+            if atom.is_sidechain:
+                positive = True
+        elif atom.element.symbol == 'O' and residue.name in ['GLU', 'ASP']:
+            if atom.is_sidechain:
+                negative = True
 
-            if atom.element.symbol == 'N' and residue.name in ['ARG', 'HIS', 'LYS']:
-                if atom.is_sidechain:
-                    positive = True
-            elif atom.element.symbol == 'O' and residue.name in ['GLU', 'ASP']:
-                if atom.is_sidechain:
-                    negative = True
+        return positive, negative
+
+    @staticmethod
+    def _is_charged_ligand(atom, tolerance=0.1):
+
+        residue = atom.residue
+
+        positive = False
+        negative = False
+
+        if atom.charge >= tolerance:
+            positive = True
+        elif atom.charge <= -tolerance:
+            negative = True
 
         return positive, negative
 
