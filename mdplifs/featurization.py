@@ -4,6 +4,7 @@ import mdtraj as md
 from scipy.spatial import distance
 import scipy.stats as s
 from .topology import FeatureTopology
+from .structure_utils import angle_between_vectors, is_acceptable_angle
 
 
 class Fingerprinter:
@@ -81,12 +82,52 @@ class Fingerprinter:
             hydrophobic_interactions.append([(receptor_atoms[x // n_ligand],
                                               ligand_atoms[x % n_ligand]) for x in idxs])
 
+    def get_atom_coords(self, idx, frame):
+
+        return self.xyz[frame, idx, :]
+
+    def get_bond_vector(self, idx, frame):
+
+        xyz = self.traj.xyz
+
+        bound_idx = self.top.atom(idx).bonded[0].index
+
+        coord1 = xyz[frame, idx, :]
+        coord2 = xyz[frame, bound_idx, :]
+
+        return coord1 - coord2
+
+    def halogen_bond_angles(self, acceptor, donor, frame):
+
+        acceptor_coords = self.get_atom_coords(acceptor.index, frame)
+        acceptor_bonded_coords = self.get_atom_coords(acceptor.bonded[0].index, frame)
+
+        donor_coords = self.get_atom_coords(donor.index, frame)
+        donor_bonded_coords = self.get_atom_coords(donor.bonded[0].index, frame)
+
+        vec1 = acceptor_coords - acceptor_bonded_coords
+        vec2 = acceptor_coords - donor_coords
+        vec3 = donor_coords - acceptor_coords
+        vec4 = donor_coords - donor_bonded_coords
+
+        acceptor_angle = angle_between_vectors(vec1, vec2)
+        donor_angle = angle_between_vectors(vec3, vec4)
+
+        return acceptor_angle, donor_angle
+
     def get_halogen_bonds(self):
+
+        atom = self.top.atom
+
+        # Halogen bonds in biological molecules., Auffinger
+        max_dist = 0.4  # Includes +0.05 as in PLIPS
+        acceptor_angle = np.rad2deg(120)
+        donor_angle = np.rad2deg(165)
+        tolerance = np.rad2deg(30)
 
         halogen_bonds = self.halogen_bonds
         receptor_idxs = self.top.receptor_idxs
         ligand_idxs = self.top.ligand_idxs
-        atom = self.top.atom
 
         acceptor_atoms = [idx for idx in receptor_idxs if atom(idx).hydrophobic]
         donor_atoms = [idx for idx in ligand_idxs if atom(idx).hydrophobic]
@@ -97,12 +138,24 @@ class Fingerprinter:
 
         distances = md.compute_distances(self.traj, atom_pairs)
 
-        for interactions in distances:
-            idxs = np.where(interactions <= 0.36)[0]
-            candidate_bonds = [(atom(acceptor_atoms[x // n_donors]),
-                                atom(donor_atoms[x % n_donors])) for x in idxs]
+        for frame, interactions in enumerate(distances):
 
+            idxs = np.where(interactions <= max_dist)[0]
+            candidate_bonds = [(acceptor_atoms[x // n_donors],
+                                donor_atoms[x % n_donors]) for x in idxs]
 
+            candidate_angles = [self.halogen_bond_angles(atom(x), atom(y), frame)
+                                for x, y in candidate_bonds]
+
+            bonds = []
+            for tmp_idx, angles in enumerate(candidate_angles):
+
+                if (is_acceptable_angle(candidate_angles[0], acceptor_angle, tolerance) and
+                   is_acceptable_angle(candidate_angles[1], donor_angle, tolerance)):
+                    
+                    bonds.append(candidate_bonds[tmp_idx])
+
+            halogen_bonds.append(bonds)
 
 
 class LigandFingerprinter:

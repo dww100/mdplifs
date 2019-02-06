@@ -1,5 +1,17 @@
 import itertools
 from rdkit import Chem
+import numpy as np
+
+
+def angle_between_vectors(v1, v2):
+    return np.arccos(np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2)))
+
+    return acceptor_angle, donor_angle
+
+
+def is_acceptable_angle(angle, target, tolerance):
+
+    return target - tolerance < angle < target + tolerance
 
 
 def remove_duplicate_bonds(iterable):
