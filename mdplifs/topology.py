@@ -237,7 +237,7 @@ class FeatureTopology(md.Topology):
 
         rings = []
 
-        atom_list = [self.top.atom(idx) for idx in self.ligand_selection]
+        atom_list = [self.atom(idx) for idx in self.ligand_selection]
         mol = atoms_to_rdkit_mol(atom_list)
 
         sssr = Chem.GetSSSR(mol)
