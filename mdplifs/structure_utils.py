@@ -64,7 +64,7 @@ def remove_duplicate_bonds(iterable):
             yield item
 
 
-def residue_to_rdkit_mol(residue):
+def atoms_to_rdkit_mol(atoms):
 
     editable = Chem.EditableMol(Chem.Mol())
 
@@ -72,7 +72,7 @@ def residue_to_rdkit_mol(residue):
 
     rd_idx = 0
 
-    for atom in residue.atoms:
+    for atom in atoms:
         idx = atom.index
 
         rd_atom = Chem.Atom(atom.element.atomic_number)
@@ -85,7 +85,7 @@ def residue_to_rdkit_mol(residue):
         rd_idx += 1
 
     bond_list = remove_duplicate_bonds(itertools.chain.from_iterable(
-        [atom.bonds for atom in residue.atoms]))
+        [atom.bonds for atom in atoms]))
 
     for bond in bond_list:
 
@@ -100,4 +100,8 @@ def residue_to_rdkit_mol(residue):
             # only, so this is fine but in the long run need better
             editable.AddBond(rd_idx1, rd_idx2, order=Chem.rdchem.BondType.SINGLE)
 
-    return editable.GetMol()
+    mol = editable.GetMol()
+    mol.idx_to_md_idx = {rd_idx: idx for idx, rd_idx in idx_map.items()}
+
+    return mol
+

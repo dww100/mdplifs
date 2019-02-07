@@ -1,5 +1,7 @@
 import numpy as np
 import mdtraj as md
+from rdkit import Chem
+from .structure_utils import atoms_to_rdkit_mol
 
 
 class FeatureTopology(md.Topology):
@@ -9,6 +11,7 @@ class FeatureTopology(md.Topology):
 
         super().__init__()
 
+        self.ligand_selection = ligand_selection
         self.ligand_idxs = topology.select(ligand_selection)
 
         if len(self.ligand_idxs) == 0:
@@ -41,11 +44,6 @@ class FeatureTopology(md.Topology):
             for residue in chain.residues:
 
                 r = self.add_residue(residue.name, c, residue.resSeq, residue.segment_id)
-
-                if r.is_protein:
-                    r.rings = self.protein_ring_check(r)
-                else:
-                    r.rings = []
 
                 for atom in residue.atoms:
 
@@ -98,6 +96,16 @@ class FeatureTopology(md.Topology):
                 atom.halogen_donor = self._is_halogen_donor(atom)
 
         # TODO: Add ring check(s)
+
+        self.protein_rings = {}
+        self.ligand_rings = []
+
+        for residue in self.residues:
+            if residue.is_protein:
+                self.protein_rings[residue.index] = self.protein_ring_check(residue)
+
+        self.ligand_rings = self.detect_ligand_rings()
+
 
     @staticmethod
     def _is_hydrophobic(atom):
@@ -224,4 +232,18 @@ class FeatureTopology(md.Topology):
 
         else:
             return []
+
+    def detect_ligand_rings(self):
+
+        rings = []
+
+        atom_list = [self.top.atom(idx) for idx in self.ligand_selection]
+        mol = atoms_to_rdkit_mol(atom_list)
+
+        sssr = Chem.GetSSSR(mol)
+
+        for ring in sssr:
+            rings.append(mol.idx_to_md_idx(rd_idx) for rd_idx in ring)
+
+        return rings
 
