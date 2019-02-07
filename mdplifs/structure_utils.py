@@ -1,6 +1,7 @@
 import itertools
 from rdkit import Chem
 import numpy as np
+from scipy.spatial import distance
 
 
 def angle_between_vectors(v1, v2):
@@ -14,7 +15,42 @@ def is_acceptable_angle(angle, target, tolerance):
     return target - tolerance < angle < target + tolerance
 
 
+def projection(plane_normal, plane_point, target_point):
+    """Project coordinates of the target_point onto the plane.
+    Note: Adapted from PLIPS there is likely a better numpy/
+    scipy solution to this.
+
+    Parameters
+    ----------
+    plane_normal: np.array
+        Normal of the plane
+    plane_point: np.array
+        Coordinates of point on the plane
+    target_point: np.array
+        Coordinates of point to be projected
+
+    Returns
+    -------
+    np.array
+        Coordinates of point orthogonally projected on the plane
+    """
+    # Choose the plane normal pointing to the point to be projected
+    d1 = distance.euclidean(target_point, plane_normal + plane_point)
+    d2 = distance.euclidean(target_point, -1 * plane_normal + plane_point)
+
+    if d2 < d1:
+        plane_normal = -1 * plane_normal
+
+    # Calculate the projection of target_point to the plane
+    sn = -np.dot(plane_normal, target_point - plane_point)
+    sd = np.dot(plane_normal, plane_normal)
+    sb = sn / sd
+
+    return target_point + sb * plane_normal
+
+
 def remove_duplicate_bonds(iterable):
+
     # Create a set for already seen elements
     seen = set()
     for item in iterable:

@@ -40,7 +40,7 @@ class Fingerprinter:
         self.get_hydrophobic_interactions()
         self.get_halogen_bonds()
         self.get_charge_interactions()
-        
+
         # TODO: Pi stacking
         # TODO: Pi cation (paro/laro)
         # TODO: Unpaired ligand hbond donors
