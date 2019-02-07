@@ -29,6 +29,8 @@ class Fingerprinter:
         self.receptor_donor_hbonds = []
         self.hydrophobic_interactions = []
         self.halogen_bonds = []
+        self.charge_interactions_ligand_positive = []
+        self.charge_interactions_ligand_negative = []
 
         self.generatefingerprint()
 
@@ -37,8 +39,8 @@ class Fingerprinter:
         self.get_hbonds()
         self.get_hydrophobic_interactions()
         self.get_halogen_bonds()
-
-        # TODO: Salt bridge
+        self.get_charge_interactions()
+        
         # TODO: Pi stacking
         # TODO: Pi cation (paro/laro)
         # TODO: Unpaired ligand hbond donors
@@ -157,6 +159,47 @@ class Fingerprinter:
                     bonds.append(candidate_bonds[tmp_idx])
 
             halogen_bonds.append(bonds)
+
+    def get_charge_interactions(self, max_dist=0.55):
+
+        # max_dist from (Barlow and Thornton, 1983) + 0.15 as in PLIPS
+
+        atom = self.top.atom
+
+        ligand_positive = self.charge_interactions_ligand_positive
+        ligand_negative = self.charge_interactions_ligand_negative
+
+        receptor_idxs = self.top.receptor_idxs
+        ligand_idxs = self.top.ligand_idxs
+
+        positive_ligand_atoms = [idx for idx in ligand_idxs if atom(idx).positive]
+        negative_receptor_atoms = [idx for idx in receptor_idxs if atom(idx).negative]
+        ligand_positive = self._interactions_distance_filter(negative_receptor_atoms,
+                                                             positive_ligand_atoms,
+                                                             max_dist=max_dist)
+
+        positive_receptor_atoms = [idx for idx in receptor_idxs if atom(idx).positive]
+        negative_ligand_atoms = [idx for idx in ligand_idxs if atom(idx).negative]
+        ligand_negative = self._interactions_distance_filter(positive_receptor_atoms,
+                                                             negative_ligand_atoms,
+                                                             max_dist=max_dist)
+
+    def _interactions_distance_filter(self, receptor_idxs, ligand_idxs, max_dist=0.35):
+
+        n_ligand = len(ligand_idxs)
+
+        atom_pairs = itertools.product(receptor_idxs, ligand_idxs)
+
+        distances = md.compute_distances(self.traj, atom_pairs)
+
+        results = []
+
+        for interactions in distances:
+            idxs = np.where(interactions <= max_dist)[0]
+            results.append([(receptor_idxs[x // n_ligand],
+                             ligand_idxs[x % n_ligand]) for x in idxs])
+
+        return results
 
 
 class LigandFingerprinter:
