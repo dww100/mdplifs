@@ -42,6 +42,11 @@ class FeatureTopology(md.Topology):
 
                 r = self.add_residue(residue.name, c, residue.resSeq, residue.segment_id)
 
+                if r.is_protein:
+                    r.rings = self.protein_ring_check(r)
+                else:
+                    r.rings = []
+
                 for atom in residue.atoms:
 
                     self.add_atom(atom.name, atom.element, r, serial=atom.serial)
@@ -187,3 +192,36 @@ class FeatureTopology(md.Topology):
                 metal_binder = True
 
         return metal_binder
+
+    @staticmethod
+    def protein_ring_check(residue):
+
+        name = residue.name
+        atoms = residue.atoms
+
+        if name in ['TRP', 'TYR', 'HIS', 'HIE', 'HID', 'HIP', 'PHE']:
+
+            if residue.name == 'TRP':
+
+                rings = list()
+                rings.append([atom.index for atom in atoms if atom.name in ['CD2', 'CE2', 'CZ2',
+                                                                            'CH2', 'CZ3', 'CE3']])
+                rings.append([atom.index for atom in atoms if atom.name in ['NE1', 'CE2', 'CD2',
+                                                                            'CG', 'CD1']])
+                return rings
+
+            if residue.name == 'TYR':
+                return [[atom.index for atom in atoms if atom.name in ['CE2', 'CZ', 'CE1',
+                                                                       'CD1', 'CG', 'CD2']]]
+
+            if residue.name in ['HIS', 'HIE', 'HIP', 'HID']:
+                return [[atom.index for atom in atoms if atom.name in ['CG', 'CD2', 'NE2',
+                                                                       'CE1', 'ND1']]]
+
+            if residue.name == 'PHE':
+                return [[atom.index for atom in atoms if atom.name in ['CG', 'CD2', 'CE2',
+                                                                       'CZ', 'CE1', 'CD1']]]
+
+        else:
+            return []
+
