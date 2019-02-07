@@ -95,14 +95,15 @@ class FeatureTopology(md.Topology):
             elif atom.index in self.ligand_idxs:
                 atom.halogen_donor = self._is_halogen_donor(atom)
 
-        # TODO: Add ring check(s)
-
-        self.protein_rings = {}
+        self.receptor_rings = {}
         self.ligand_rings = []
 
         for residue in self.residues:
+
+            # TODO: May need to ensure that only receptor residues
+            # included or provide utility function to access as such
             if residue.is_protein:
-                self.protein_rings[residue.index] = self.protein_ring_check(residue)
+                self.receptor_rings[residue.index] = self.protein_ring_check(residue)
 
         self.ligand_rings = self.detect_ligand_rings()
 
