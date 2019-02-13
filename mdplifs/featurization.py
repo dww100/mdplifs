@@ -4,7 +4,7 @@ import mdtraj as md
 from scipy.spatial import distance
 import scipy.stats as s
 from .topology import FeatureTopology
-from .structure_utils import angle_between_vectors, is_acceptable_angle
+from .structure_utils import angle_between_vectors, is_acceptable_angle, projection, get_ring_normal
 
 
 class Fingerprinter:
@@ -31,6 +31,7 @@ class Fingerprinter:
         self.halogen_bonds = []
         self.charge_interactions_ligand_positive = []
         self.charge_interactions_ligand_negative = []
+        self.pistacking_interactions = []
 
         self.generatefingerprint()
 
@@ -40,8 +41,8 @@ class Fingerprinter:
         self.get_hydrophobic_interactions()
         self.get_halogen_bonds()
         self.get_charge_interactions()
+        self.get_pistacking()
 
-        # TODO: Pi stacking
         # TODO: Pi cation (paro/laro)
         # TODO: Unpaired ligand hbond donors
         # TODO: Unpaired ligand hbond acceptors
@@ -200,6 +201,72 @@ class Fingerprinter:
                              ligand_idxs[x % n_ligand]) for x in idxs])
 
         return results
+
+    def get_pistacking(self, dist_max=0.55,
+                       angle_dev=np.deg2rad(30), max_offset=0.2):
+
+        # Limits from (McGaughey, 1998) as in PLIPS
+        # offset = radius of benzene + 0.5 A
+
+        traj = self.traj
+        top = self.top
+        ligand_rings = top.ligand_rings
+        receptor_rings = top.receptor_rings
+
+        ring_pairs = itertools.product(receptor_rings, ligand_rings)
+
+        # TODO: implement ring planarity check
+
+        stacking_interactions = []
+
+        for receptor_ring, ligand_ring in ring_pairs:
+
+            for frame in range(traj.n_frames):
+
+                ring_list = []
+
+                receptor_ring_coords = traj[frame][receptor_ring]
+                ligand_ring_coords = traj[frame][ligand_ring]
+
+                receptor_ring_centre = np.apply_along_axis(np.mean, 0, receptor_ring_coords)
+                ligand_ring_centre = np.apply_along_axis(np.mean, 0, ligand_ring_coords)
+
+                d = distance.euclidean(receptor_ring_centre,
+                                       ligand_ring_centre)
+
+                # Need to calculate this - currently place holder
+                receptor_ring_normal = get_ring_normal(receptor_ring_coords)
+                ligand_ring_normal = get_ring_normal(ligand_ring_coords)
+
+                b = angle_between_vectors(receptor_ring_normal,
+                                          ligand_ring_normal)
+
+                angle = min(b, np.pi - b if not np.pi - b < 0 else b)
+
+                # Ring centre offset calculation
+                proj1 = projection(ligand_ring_normal, ligand_ring_centre, receptor_ring_centre)
+                proj2 = projection(receptor_ring_normal, receptor_ring_centre, ligand_ring_centre)
+                offset = min(distance.euclidean(proj1, ligand_ring_centre),
+                             distance.euclidean(proj2, receptor_ring_normal))
+
+                ptype = None
+                if not 0.05 < d < dist_max:
+                    continue
+                if 0 < angle < angle_dev and offset < max_offset:
+                    ptype = 'P'
+                elif np.deg2rad(90) - angle_dev < angle < np.deg2rad(90) + angle_dev and offset < max_offset:
+                    ptype = 'T'
+
+                if ptype is not None:
+                    # May want better specification but this'll do for now
+
+                    receptor_residue = top.atom(receptor_ring[0]).residue
+                    ligand_residue = top.atom(ligand_ring[0]).residue
+                    ring_list.append((receptor_residue, ligand_residue, ptype))
+
+            stacking_interactions.append(ring_list)
+
+        self.pistacking_interactions = stacking_interactions
 
 
 class LigandFingerprinter:
