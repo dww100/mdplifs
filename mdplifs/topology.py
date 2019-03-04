@@ -63,7 +63,6 @@ class FeatureTopology(md.Topology):
                     elif new_atom.index in self.ligand_idxs:
                         (new_atom.positive,
                          new_atom.negative) = self._is_charged_ligand(atom, charge_tolerance)
-                        pass
 
                     new_atom.in_ring = False
                     new_atom.halogen_acceptor = False
