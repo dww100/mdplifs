@@ -278,6 +278,7 @@ class Fingerprinter:
         self.pistacking_interactions = stacking_interactions
 
     def get_pi_cation_interactions(self, dist_max=0.55,
+                                   dist_min=0.5,
                                    angle_dev=np.deg2rad(30),
                                    max_offset=0.2,
                                    target_rings='receptor'):
@@ -287,22 +288,48 @@ class Fingerprinter:
 
         traj = self.traj
         top = self.top
+        atom = self.top.atom
 
         if target_rings == 'receptor':
             rings = top.receptor_rings
+            component_idxs = top.receptor_idxs
+            result = self.pi_cation_receptor
+            # TODO: Add angle check for interactions with tertiary/quaternary
+            #       amines in the ligand
+
         else:
             rings = top.ligand_rings
+            component_idxs = top.ligand_idxs
+            result = self.pi_cation_ligand
+
+        cations = [idx for idx in component_idxs if atom(idx).positive]
 
         for frame in range(traj.n_frames):
 
-            for ring in rings:
-
             ring_list = []
 
-            ring_coords = traj[frame][ring]
+            for ring in rings:
 
-            ring_centre = np.apply_along_axis(np.mean, 0, ring_coords)
+                ring_coords = traj[frame][ring]
+                ring_centre = np.apply_along_axis(np.mean, 0, ring_coords)
+                ring_residue = atom(ring[0]).residue
 
+                for cation_idx in cations:
+
+                    cat_coord = traj[frame, cation_idx]
+                    d = distance.euclidean(ring_centre, cat_coord)
+                    cation_residue = atom(cation_idx[0]).residue
+
+                    if dist_min < d < dist_max:
+
+                        ring_normal = get_ring_normal(ring_coords)
+                        proj = projection(ring_normal, ring_centre, cat_coord)
+                        offset = distance.euclidean(proj, ring_centre)
+
+                        if offset < max_offset:
+                            ring_list.append((ring_residue, cation_residue))
+
+            result.append(ring_list)
 
 
 class LigandFingerprinter:
