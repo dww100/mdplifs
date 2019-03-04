@@ -8,8 +8,57 @@ from .structure_utils import angle_between_vectors, is_acceptable_angle, project
 
 
 class Fingerprinter:
+    """Generate a receptor-ligand trajectory compute the interaction fingerprint.
 
-    def __init__(self, traj, frames, ligand_selection='resname LIG',
+    Parameters
+    ----------
+    traj  : `mdtraj.Trajectory`
+        Trajectory object containing topology information and coordinates over time.
+    frames : slice, optional, default=slice(0,-1, 1)
+        Which frames of the trajectory should be used, default to all of them.
+    ligand_selection : str_like, optional, default='resname LIG'
+        Selection text (using the mdtraj DSL) used to select ligand atoms.
+    receptor_selection : str_like, optional, default='protein'
+        Selection text (using the mdtraj DSL) used to select receptor atoms.
+    water_cutoff :  int, optional, default=0
+        Number of water molecules to include as part of the receptor.
+
+    Attributes
+    ----------
+    traj : `mdtraj.Trajectory`
+        Trajectory filtered to contain only the frames selected for analysis.
+    top : FeatureTopology
+        Based on traj.topology - but with additional features added to facilitate
+        fingerprinting.
+    ligand_donor_hbonds : list
+        List of lists of the hydrogen bonds in which the ligand acts as donor
+        for each frame.
+    receptor_donor_hbonds : list
+        List of lists of the hydrogen bonds in which the receptor acts as donor
+        for each frame.
+    hydrophobic_interactions : list
+        List of lists of hydrophobic interactions for each frame.
+    halogen_bonds : list
+        List of lists of halogen bonds for each frame.
+    charge_interactions_ligand_positive : list
+        List of list of charge interactions in which the ligand is positive for
+        each frame.
+    charge_interactions_ligand_negative : list
+        List of list of charge interactions in which the receptor is positive
+        for each frame.
+    pi_stacking_interactions : list
+        List of list of pi-stacking interactions for each frame.
+    pi_cation_receptor : list
+        List of list of ring-cation interactions in which the receptor provides
+        positive atom for each frame.
+    pi_cation_ligand : list
+        List of list of ring-cation interactions in which ligand provides
+        positive atom for each frame.
+    ligand_fingerprint : list
+        Ligand fingerprints for each frame.
+
+    """
+    def __init__(self, traj, frames=None, ligand_selection='resname LIG',
                  receptor_selection='protein', water_cutoff=0):
 
         # TODO: Allow customized cut offs for each class of interaction
@@ -42,6 +91,14 @@ class Fingerprinter:
         self.generatefingerprint()
 
     def generate_fingerprint(self):
+        """
+        Analyse the input trajectory to measure interactions and ligand shape
+        changes.
+
+        Returns
+        -------
+
+        """
 
         self.get_hbonds()
         self.get_hydrophobic_interactions()
@@ -60,6 +117,24 @@ class Fingerprinter:
                                                       ligand_selection=self.ligand_selection)
 
     def get_hbonds(self):
+        """
+        Measure all hydrogen bonds in each frame then log the bonds in
+        `self.ligand_donor_hbonds` and `self.receptor_donor_hbonds`.
+
+        Uses the Wernet Nilsson criteria [1] for detecting bonds as implemented in
+        mdtraj. According to the mdtraj docs that means the criterion employed is:
+        "r_DA < 3.3 Angstom −0.00044∗δHDA∗δHDA, where
+        r_DA is the distance between donor and acceptor heavy atoms, and δHDA
+        the angle made by the hydrogen atom, donor, and acceptor atoms, measured
+        in degrees (zero in the case of a perfectly straight bond: D-H ... A)."
+
+        [1] Wernet, Ph., et al. “The Structure of the First Coordination Shell
+        in Liquid Water.” (2004) Science 304, 995-999.
+
+        Returns
+        -------
+
+        """
 
         top = self.top
 
@@ -74,7 +149,21 @@ class Fingerprinter:
             self.receptor_donor_hbonds.append(hbonds[(np.isin(hbonds[:, 0], top.receptor_idxs)) &
                                                      (np.isin(hbonds[:, 2], top.ligand_idxs))])
 
-    def get_hydrophobic_interactions(self):
+    def get_hydrophobic_interactions(self, max_dist=0.36):
+        """
+        Detect interactions between atoms in ligand and receptor which are
+        flagged as being hydrophobic in `self.top`. Uses a simple distance
+        cut off (`max_dist`).
+
+        Parameters
+        ----------
+        max_dist : float
+            Maximum allowable distance for an interaction.
+
+        Returns
+        -------
+
+        """
 
         hydrophobic_interactions = self.hydrophobic_interactions
         receptor_idxs = self.top.receptor_idxs
@@ -91,15 +180,47 @@ class Fingerprinter:
         distances = md.compute_distances(self.traj, atom_pairs)
 
         for interactions in distances:
-            idxs = np.where(interactions <= 0.36)[0]
+            idxs = np.where(interactions <= max_dist)[0]
             hydrophobic_interactions.append([(receptor_atoms[x // n_ligand],
                                               ligand_atoms[x % n_ligand]) for x in idxs])
 
     def get_atom_coords(self, idx, frame):
+        """Get the coordinates of the `idx`th atom in the `frame`th frame.
+
+        Parameters
+        ----------
+        idx :  int
+            Atom index of interest.
+        frame : int
+            Trajectory frame of interest.
+
+        Returns
+        -------
+        `np.array`
+            X, Y and Z coordinates of the selected atom in given frame.
+        """
 
         return self.xyz[frame, idx, :]
 
     def get_bond_vector(self, idx, frame):
+        """
+        Get vector describing the bond between the `idx`th atom and the first
+        bonded atom in the`frame`th frame. calculated as the difference in the
+        coordinates of teh two atoms.
+        Note: Not sure why this is a thing - kept here in case it becomes clear.
+
+        Parameters
+        ----------
+        idx :  int
+            Atom index of interest.
+        frame : int
+            Trajectory frame of interest.
+
+        Returns
+        -------
+        `np.array`
+            Describes the vector between selected atom and first onded to it.
+        """
 
         xyz = self.traj.xyz
 
@@ -111,6 +232,31 @@ class Fingerprinter:
         return coord1 - coord2
 
     def halogen_bond_angles(self, acceptor, donor, frame):
+        """
+        Get the angles to be assessed in a halogen bond involving the supplied
+        `donor` and `acceptor` atoms in `frame`th frame as defined by:
+
+        acceptor     donor
+          ^         ^
+        Y-O ........X-C
+
+        acceptor angle = angle_between(Y->O, O->X)
+        donor angle = angle_between(X->O, X->C)
+
+        Parameters
+        ----------
+        acceptor : `mdtraj.core.topology.Atom`
+            Atom that will act as acceptor (O in diagram).
+        donor : `mdtraj.core.topology.Atom`
+            Atom that will act as acceptor (X n diagram).
+        frame : int
+            Frame within `self.trajectory` from which to get atomic coordinates.
+
+        Returns
+        -------
+        float, float
+            Acceptor and donor angles in radians.
+        """
 
         acceptor_coords = self.get_atom_coords(acceptor.index, frame)
         acceptor_bonded_coords = self.get_atom_coords(acceptor.bonded[0].index, frame)
@@ -128,15 +274,40 @@ class Fingerprinter:
 
         return acceptor_angle, donor_angle
 
-    def get_halogen_bonds(self):
+    def get_halogen_bonds(self, max_dist=0.4, acceptor_angle=np.rad2deg(120),
+                          donor_angle=np.rad2deg(165),
+                          tolerance=np.rad2deg(30)):
+        """
+        Creates a list of lists of atom index pairs representing atoms involved
+        in halogen bonds for each frame as stores in `self.halogen_bonds`. To be
+        bonded we need a Y-O...X-C configuration, where X is a halogen donor,
+        O a halogen acceptor (detected in the topology) which meets the following
+        criteria:
+        angle_between(Y->O, O->X) within `tolerance` of  acceptor_angle
+        angle_between(X->O, X->C) within `tolerance` of  donor_angle
+        distange_between(O, X) <= max_dist
+
+        Defaults for the targets are taken from PLIPS which gets them from:
+        P. Auffinger, et al., "Halogen bonds in biological molecules", 2004, 101 (48)
+        https://doi.org/10.1073/pnas.0407607101
+
+        Parameters
+        ----------
+        max_dist : float, optional, default=0.4
+            Maximum bonding distance, default Includes +0.05 as in PLIPS.
+        acceptor_angle : float
+            Optimal acceptor angle (radians).
+        donor_angle : float
+            Optimal donor angle (radians).
+        tolerance : float
+            Tolerance on angles to accept bond (radians).
+
+        Returns
+        -------
+
+        """
 
         atom = self.top.atom
-
-        # Halogen bonds in biological molecules., Auffinger
-        max_dist = 0.4  # Includes +0.05 as in PLIPS
-        acceptor_angle = np.rad2deg(120)
-        donor_angle = np.rad2deg(165)
-        tolerance = np.rad2deg(30)
 
         halogen_bonds = self.halogen_bonds
         receptor_idxs = self.top.receptor_idxs
@@ -163,16 +334,36 @@ class Fingerprinter:
             bonds = []
             for tmp_idx, angles in enumerate(candidate_angles):
 
-                if (is_acceptable_angle(candidate_angles[0], acceptor_angle, tolerance) and
-                   is_acceptable_angle(candidate_angles[1], donor_angle, tolerance)):
+                if (is_acceptable_angle(angles[0], acceptor_angle, tolerance) and
+                   is_acceptable_angle(angles[1], donor_angle, tolerance)):
 
                     bonds.append(candidate_bonds[tmp_idx])
 
             halogen_bonds.append(bonds)
 
     def get_charge_interactions(self, max_dist=0.55):
+        """
+        Records lists of charged interactions betwen ligand and receptor, where
+        a positive and negative atom are within `max_dist` of one another, for
+        each frame in the trajectory. Interactions are is stored in
+        `self.charge_interactions_ligand_positive` and
+        `self.charge_interactions_ligand_negative` according to the charge of
+        the ligand atom involved.
 
-        # max_dist from (Barlow and Thornton, 1983) + 0.15 as in PLIPS
+        Default criteria from PLIPS originate in:
+        [1] D.J.Barlow and J.M.Thornton, 'Ion-pairs in proteins', JMB, 1983,
+        168 (4), https://doi.org/10.1016/S0022-2836(83)80079-5
+
+        Parameters
+        ----------
+        max_dist : float
+            Maximum dist between charges to be counted as an interaction (taken
+            from [1] but + 0.15 as is PLIPS.
+
+        Returns
+        -------
+
+        """
 
         atom = self.top.atom
 
@@ -316,7 +507,7 @@ class Fingerprinter:
 
                 for cation_idx in cations:
 
-                    cat_coord = traj[frame, cation_idx]
+                    cat_coord = self.get_atom_coords(cation_idx, frame)
                     d = distance.euclidean(ring_centre, cat_coord)
                     cation_residue = atom(cation_idx[0]).residue
 
