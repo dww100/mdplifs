@@ -15,6 +15,8 @@ class Fingerprinter:
         # TODO: Allow customized cut offs for each class of interaction
 
         selection_text = f'({receptor_selection}) or ({ligand_selection})'
+        self.ligand_selection = ligand_selection
+        self.receptor_selection = receptor_selection
 
         if water_cutoff > 0:
             # TODO: Allow water molecules to be added
@@ -31,7 +33,11 @@ class Fingerprinter:
         self.halogen_bonds = []
         self.charge_interactions_ligand_positive = []
         self.charge_interactions_ligand_negative = []
-        self.pistacking_interactions = []
+        self.pi_stacking_interactions = []
+        self.pi_cation_receptor = []
+        self.pi_cation_ligand = []
+
+        self.ligand_fingerprint = []
 
         self.generatefingerprint()
 
@@ -41,7 +47,7 @@ class Fingerprinter:
         self.get_hydrophobic_interactions()
         self.get_halogen_bonds()
         self.get_charge_interactions()
-        self.get_pistacking()
+        self.get_pi_stacking()
 
         # TODO: Pi cation (paro/laro)
         # TODO: Unpaired ligand hbond donors
@@ -49,6 +55,9 @@ class Fingerprinter:
         # TODO: Water bridged interations
         # TODO: Metal complex interations
         # TODO: Strip double counting of bonds
+
+        self.ligand_fingerprint = LigandFingerprinter(self.traj,
+                                                      ligand_selection=self.ligand_selection)
 
     def get_hbonds(self):
 
@@ -202,8 +211,8 @@ class Fingerprinter:
 
         return results
 
-    def get_pistacking(self, dist_max=0.55,
-                       angle_dev=np.deg2rad(30), max_offset=0.2):
+    def get_pi_stacking(self, dist_max=0.55,
+                        angle_dev=np.deg2rad(30), max_offset=0.2):
 
         # Limits from (McGaughey, 1998) as in PLIPS
         # offset = radius of benzene + 0.5 A
@@ -219,9 +228,9 @@ class Fingerprinter:
 
         stacking_interactions = []
 
-        for receptor_ring, ligand_ring in ring_pairs:
+        for frame in range(traj.n_frames):
 
-            for frame in range(traj.n_frames):
+            for receptor_ring, ligand_ring in ring_pairs:
 
                 ring_list = []
 
@@ -267,6 +276,33 @@ class Fingerprinter:
             stacking_interactions.append(ring_list)
 
         self.pistacking_interactions = stacking_interactions
+
+    def get_pi_cation_interactions(self, dist_max=0.55,
+                                   angle_dev=np.deg2rad(30),
+                                   max_offset=0.2,
+                                   target_rings='receptor'):
+
+        # Limits from (McGaughey, 1998) as in PLIPS
+        # offset = radius of benzene + 0.5 A
+
+        traj = self.traj
+        top = self.top
+
+        if target_rings == 'receptor':
+            rings = top.receptor_rings
+        else:
+            rings = top.ligand_rings
+
+        for frame in range(traj.n_frames):
+
+            for ring in rings:
+
+            ring_list = []
+
+            ring_coords = traj[frame][ring]
+
+            ring_centre = np.apply_along_axis(np.mean, 0, ring_coords)
+
 
 
 class LigandFingerprinter:
