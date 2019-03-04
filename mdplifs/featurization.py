@@ -49,7 +49,7 @@ class Fingerprinter:
         self.get_charge_interactions()
         self.get_pi_stacking()
 
-        # TODO: Pi cation (paro/laro)
+        # TODO: Pi cation (receptor and ligand rings)
         # TODO: Unpaired ligand hbond donors
         # TODO: Unpaired ligand hbond acceptors
         # TODO: Water bridged interations
