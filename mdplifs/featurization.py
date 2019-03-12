@@ -343,7 +343,7 @@ class Fingerprinter:
 
     def get_charge_interactions(self, max_dist=0.55):
         """
-        Records lists of charged interactions betwen ligand and receptor, where
+        Records lists of charged interactions between ligand and receptor, where
         a positive and negative atom are within `max_dist` of one another, for
         each frame in the trajectory. Interactions are is stored in
         `self.charge_interactions_ligand_positive` and
@@ -356,9 +356,9 @@ class Fingerprinter:
 
         Parameters
         ----------
-        max_dist : float
-            Maximum dist between charges to be counted as an interaction (taken
-            from [1] but + 0.15 as is PLIPS.
+        max_dist : float, optional, default=0.55
+            Maximum dist between charges to be counted as an interaction (default
+            taken from [1] but + 0.15 as is PLIPS).
 
         Returns
         -------
@@ -386,6 +386,27 @@ class Fingerprinter:
                                                              max_dist=max_dist)
 
     def _interactions_distance_filter(self, receptor_idxs, ligand_idxs, max_dist=0.35):
+        """
+        Filters distances between pairs of residues for those less than `max_dist`.
+        All vs all check between the receptor and ligand input lists for all
+        frames in `self.traj`.
+
+        Parameters
+        ----------
+        receptor_idxs : list of int
+            Indexes of the receptor residues of interest.
+        ligand_idxs : list of int
+            Indexes of the ligand residues of interest.
+        max_dist : float
+            Maximum dist between charges to be counted as an interaction.
+
+        Returns
+        -------
+        list
+            List of lists of tuples containing pairs of atoms within the cut off
+            for each frame in `self.traj`.
+
+        """
 
         n_ligand = len(ligand_idxs)
 
@@ -404,9 +425,28 @@ class Fingerprinter:
 
     def get_pi_stacking(self, dist_max=0.55,
                         angle_dev=np.deg2rad(30), max_offset=0.2):
+        """
+        Detect pi-stacking interactions between rings in receptor and ligand for
+        all frames in `self.traj`. Results stored in `self.pistacking_interactions`
 
-        # Limits from (McGaughey, 1998) as in PLIPS
-        # offset = radius of benzene + 0.5 A
+        Note: default limits from (McGaughey, 1998) as in PLIPS,
+        offset = radius of benzene + 0.5 A
+
+        Parameters
+        ----------
+        dist_max : float, optional, default=0.55
+            Maximum distance between rings for an interactions to be counted (nm).
+        angle_dev : float, optional, default=np.deg2rad(30)
+            Maximum angle between ring normals for an interactions to be counted
+            (radians).
+        max_offset
+            Maximum distance between projection of ring centre to the centre of
+            the other ring for an interactions to be counted (nm).
+
+        Returns
+        -------
+
+        """
 
         traj = self.traj
         top = self.top
@@ -470,12 +510,36 @@ class Fingerprinter:
 
     def get_pi_cation_interactions(self, dist_max=0.55,
                                    dist_min=0.5,
-                                   angle_dev=np.deg2rad(30),
                                    max_offset=0.2,
-                                   target_rings='receptor'):
+                                   target_rings='receptor',
+                                   angle_dev=np.deg2rad(30)):
+        """
+        Detect pi-stacking interactions between rings in receptor and ligand for
+        all frames in `self.traj`. Results stored in `self.pi_cation_ligand` or
+        `self.pi_cation_receptor` depending on `target_rings`.
 
-        # Limits from (McGaughey, 1998) as in PLIPS
-        # offset = radius of benzene + 0.5 A
+        Note: limits from (McGaughey, 1998) as in PLIPS,
+        offset = radius of benzene + 0.5 A
+
+        Parameters
+        ----------
+        dist_max : float, optional, default=0.55
+            Maximum distance to count as an interaction (nm).
+        dist_min : float, optional, default=0.5
+            Minimum distance to count as a valid interaction (nm).
+        max_offset : float, optional, default=0.2
+            Maximum offset between projection of cation and ring centre to count
+            as an interaction.
+        target_rings : float, optional, default='receptor'
+            Are we looking for interactions with 'receptor' or 'ligand' rings.
+        angle_dev : float, optional, default=np.deg2rad(30)
+            Angle tolerance for use in cases with
+
+
+        Returns
+        -------
+
+        """
 
         traj = self.traj
         top = self.top
