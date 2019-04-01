@@ -47,4 +47,6 @@ setup(
     # Manual control if final package is compressible or not, set False to prevent the .egg from being made
     # zip_safe=False,
 
+    # Make command line script available
+    entry_points={'console_scripts': ['mdplifs = mdplifs.cli:main']},
 )
