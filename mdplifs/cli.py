@@ -1,4 +1,6 @@
 import docopt
+from . import featurization
+
 
 usage = """
 mdplifs
@@ -16,3 +18,4 @@ Arguments:
 def main(argv=None):
 
     args = docopt(usage, argv=argv, version='0.0.1')
+
