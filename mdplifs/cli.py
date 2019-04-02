@@ -1,4 +1,4 @@
-import docopt
+from docopt import docopt
 from . import featurization
 
 
