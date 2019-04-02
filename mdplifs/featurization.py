@@ -97,7 +97,7 @@ class Fingerprinter:
 
         self.ligand_fingerprint = []
 
-        self.generatefingerprint()
+        self.generate_fingerprint()
 
     def generate_fingerprint(self):
         """
@@ -209,7 +209,7 @@ class Fingerprinter:
             X, Y and Z coordinates of the selected atom in given frame.
         """
 
-        return self.xyz[frame, idx, :]
+        return self.traj.xyz[frame, idx, :]
 
     def get_bond_vector(self, idx, frame):
         """
@@ -458,9 +458,11 @@ class Fingerprinter:
         """
 
         traj = self.traj
+        traj_coords = traj.xyz
         top = self.top
         ligand_rings = top.ligand_rings
-        receptor_rings = top.receptor_rings
+        #receptor_rings = top.receptor_rings
+        receptor_rings = top.receptor_ring_list()
 
         ring_pairs = itertools.product(receptor_rings, ligand_rings)
 
@@ -474,8 +476,8 @@ class Fingerprinter:
 
                 ring_list = []
 
-                receptor_ring_coords = traj[frame][receptor_ring]
-                ligand_ring_coords = traj[frame][ligand_ring]
+                receptor_ring_coords = traj_coords[frame][receptor_ring]
+                ligand_ring_coords = traj_coords[frame][ligand_ring]
 
                 receptor_ring_centre = np.apply_along_axis(np.mean, 0, receptor_ring_coords)
                 ligand_ring_centre = np.apply_along_axis(np.mean, 0, ligand_ring_coords)
@@ -628,7 +630,7 @@ class LigandFingerprinter:
         self.n_moments = n_moments
 
         ligand_atoms = traj.topology.select(ligand_selection)
-        self.traj = traj.atomslice[ligand_atoms]
+        self.traj = traj.atom_slice(ligand_atoms)
         self.top = self.traj.topology
 
         self.ctds = None
