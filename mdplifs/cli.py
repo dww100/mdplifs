@@ -19,21 +19,22 @@ ch.setFormatter(formatter)
 # add ch to logger
 logger.addHandler(ch)
 
-usage = """
-mdplifs
+usage = """mdplifs
 
 Usage:
   mdplifs (<topology> <trajectory>) [<ligand_selection>] [--first=<first> --last=<last> --stride=<stride>]
-  
+  mdplifs -h | --help 
+
 Arguments:
   topology            System topology (currently only AMBER prmtop supported)
   trajectory          Molecular dynamics trajectory
   ligand_selection    Selection text for the ligand (default='resname LIG')
-  
+
 Options:
-  first               First frame to use in analysis
-  last                Last frame to use in analysis
-  stride              Step between frames to be used in analysis
+  -h --help           Show this screen.
+  --first=<first>     First frame to use in analysis [default: 1].
+  --last=<last>       Last frame to use in analysis [default: -1].
+  --stride=<stride>   Step between frames to be used in analysis [default: 1].
 """
 
 
@@ -41,33 +42,28 @@ def get_frame_range(traj, first, last, stride):
 
     n_frames = traj.n_frames
 
-    if stride is None:
-        stride = 1
-    else:
-        stride = int(stride)
-
-    if last is None:
-        last = -1
-    else:
-        last = int(last)
-
-        if last < -1:
-            logger.critical('Last frame must be > -1 (selects final frame of '
-                            'trajectory)')
-            sys.exit(1)
-        elif last > n_frames:
-            logging.warning('Last frame selected after end of trajectory, '
-                            'using last frame.')
-            last = -1
-
-    if first is None:
-        first = 1
-    else:
+    try:
         first = int(first)
-        if first < -1 or (first > last and last != -1):
-            logger.critical('First frame must be > -1 and occur before the last'
-                            ' frame selected.')
-            sys.exit(1)
+        last = int(last)
+        stride = int(stride)
+    except ValueError:
+        logger.critical('Frame selections (first, last & stride) must all be '
+                        'integers')
+        sys.exit(1)
+
+    if last < -1:
+        logger.critical('Last frame must be > -1 (selects final frame of '
+                        'trajectory)')
+        sys.exit(1)
+    elif last > n_frames:
+        logging.warning('Last frame selected after end of trajectory, '
+                        'using last frame.')
+        last = -1
+
+    if first < -1 or (first > last and last != -1):
+       logger.critical('First frame must be > -1 and occur before the last'
+                       ' frame selected.')
+       sys.exit(1)
 
     if stride > last - first and last != -1:
         logger.warning('Selected frame stride greater than difference '
