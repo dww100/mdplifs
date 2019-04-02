@@ -57,8 +57,9 @@ def projection(plane_normal, plane_point, target_point):
 def get_ring_normal(coords):
 
     selected_ring_coords = [coords[x] for x in [0, 2, 4]]
+
     vector1 = selected_ring_coords[0] - selected_ring_coords[1]
-    vector2 = selected_ring_coords[2], selected_ring_coords[0]
+    vector2 = selected_ring_coords[2] - selected_ring_coords[0]
 
     return normalize_vector(np.cross(vector1, vector2))
 
