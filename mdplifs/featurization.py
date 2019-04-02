@@ -10,12 +10,16 @@ from .structure_utils import angle_between_vectors, is_acceptable_angle, project
 class Fingerprinter:
     """Generate a receptor-ligand trajectory compute the interaction fingerprint.
 
+    TODO: Make it possible to pass only filenames for topology and trajectory
+
     Parameters
     ----------
     traj  : `mdtraj.Trajectory`
         Trajectory object containing topology information and coordinates over time.
     frames : slice, optional, default=slice(0,-1, 1)
         Which frames of the trajectory should be used, default to all of them.
+    top_path : str_like, optional, default='build/complex.prmtop'
+        Path to the topology file used to create the trajectory object.
     ligand_selection : str_like, optional, default='resname LIG'
         Selection text (using the mdtraj DSL) used to select ligand atoms.
     receptor_selection : str_like, optional, default='protein'
@@ -58,8 +62,11 @@ class Fingerprinter:
         Ligand fingerprints for each frame.
 
     """
-    def __init__(self, traj, frames=None, ligand_selection='resname LIG',
-                 receptor_selection='protein', water_cutoff=0):
+    def __init__(self, traj, frames=slice(0, -1, 1),
+                 top_path='build/complex.prmtop',
+                 ligand_selection='resname LIG',
+                 receptor_selection='protein',
+                 water_cutoff=0):
 
         # TODO: Allow customized cut offs for each class of interaction
 
@@ -73,8 +80,10 @@ class Fingerprinter:
 
         topology = traj.topology
         selected_atoms = topology.select(selection_text)
-        self.traj = traj[frames].atomslice[selected_atoms]
-        self.top = FeatureTopology(topology, ligand_selection)
+        self.traj = traj[frames].atom_slice(selected_atoms)
+
+        self.top = FeatureTopology(topology, ligand_selection=ligand_selection,
+                                   prmtop_path=top_path)
 
         self.ligand_donor_hbonds = []
         self.receptor_donor_hbonds = []
