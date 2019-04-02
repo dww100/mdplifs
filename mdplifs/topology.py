@@ -15,7 +15,7 @@ class FeatureTopology(md.Topology):
         self.ligand_idxs = topology.select(ligand_selection)
 
         if len(self.ligand_idxs) == 0:
-            # Replace this with a sensible exception/useful logging
+            # TODO: Replace this with a sensible exception/useful logging
             raise Exception('Nonsense input - no ligand selected')
 
         self.receptor_idxs = topology.select('protein')
@@ -95,17 +95,24 @@ class FeatureTopology(md.Topology):
             elif atom.index in self.ligand_idxs:
                 atom.halogen_donor = self._is_halogen_donor(atom)
 
-        self.receptor_rings = {}
+        self._receptor_rings = {}
 
         for residue in self.residues:
 
             # TODO: May need to ensure that only receptor residues
             # included or provide utility function to access as such
             if residue.is_protein:
-                self.receptor_rings[residue.index] = self.protein_ring_check(residue)
+                rings = self.protein_ring_check(residue)
+                if rings:
+                    self._receptor_rings[residue.index] = rings
 
         self.ligand_rings = self.detect_ligand_rings()
 
+    def receptor_ring_list(self):
+
+        residue_rings = self._receptor_rings
+
+        return sum(residue_rings.values(), [])
 
     @staticmethod
     def _is_hydrophobic(atom):
@@ -214,6 +221,7 @@ class FeatureTopology(md.Topology):
                 rings = list()
                 rings.append([atom.index for atom in atoms if atom.name in ['CD2', 'CE2', 'CZ2',
                                                                             'CH2', 'CZ3', 'CE3']])
+                atoms = residue.atoms
                 rings.append([atom.index for atom in atoms if atom.name in ['NE1', 'CE2', 'CD2',
                                                                             'CG', 'CD1']])
                 return rings
