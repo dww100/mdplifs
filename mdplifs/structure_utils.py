@@ -161,7 +161,7 @@ def remove_duplicate_bonds(iterable):
 
 def atoms_to_rdkit_mol(atoms):
     """
-    Create an `rdkit` `Mol` from an iterable of `mdtraj` atoms.
+    Create an `rdkit.Chem.Mol` from an iterable of `mdtraj` atoms.
     The atoms should contain bonding information for this to be
     included in the output Mol.
 
