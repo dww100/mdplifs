@@ -8,7 +8,8 @@ Tool to calculate protein-ligand interaction fingerprints from molecular dynamic
 from __future__ import absolute_import
 
 # Add imports here
-from .mdplifs import *
+from .featurization import *
+from .topology import *
 
 # Handle versioneer
 from ._version import get_versions
