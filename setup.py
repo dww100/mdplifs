@@ -1,6 +1,6 @@
 """
 mdplifs
-Tool to calculate protein-ligand interaction fingerprints from molecular dynamics trajectories
+Tool to calculate protein-ligand interaction fingerprints from molecular dynamics trajectories.
 """
 from setuptools import setup
 import versioneer
