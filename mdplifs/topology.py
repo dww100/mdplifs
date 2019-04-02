@@ -96,7 +96,6 @@ class FeatureTopology(md.Topology):
                 atom.halogen_donor = self._is_halogen_donor(atom)
 
         self.receptor_rings = {}
-        self.ligand_rings = []
 
         for residue in self.residues:
 
@@ -241,10 +240,10 @@ class FeatureTopology(md.Topology):
         atom_list = [self.atom(idx) for idx in self.ligand_idxs]
         mol = atoms_to_rdkit_mol(atom_list)
 
-        sssr = Chem.GetSSSR(mol)
+        sssr = Chem.GetSymmSSSR(mol)
 
         for ring in sssr:
-            rings.append(mol.idx_to_md_idx(rd_idx) for rd_idx in ring)
+            rings.append([mol.idx_to_md_idx[rd_idx] for rd_idx in ring])
 
         return rings
 
