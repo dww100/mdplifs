@@ -56,14 +56,14 @@ def get_frame_range(traj, first, last, stride):
                         'trajectory)')
         sys.exit(1)
     elif last > n_frames:
-        logging.warning('Last frame selected after end of trajectory, '
-                        'using last frame.')
+        logger.warning('Last frame selected after end of trajectory, '
+                       'using last frame.')
         last = -1
 
     if first < -1 or (first > last and last != -1):
-       logger.critical('First frame must be > -1 and occur before the last'
-                       ' frame selected.')
-       sys.exit(1)
+        logger.critical('First frame must be > -1 and occur before the last'
+                        ' frame selected.')
+        sys.exit(1)
 
     if stride > last - first and last != -1:
         logger.warning('Selected frame stride greater than difference '
