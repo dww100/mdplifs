@@ -194,8 +194,8 @@ class FeatureTopology(md.Topology):
                 if atom.element.symbol == 'O':
                     metal_binder = True
 
-            elif (residue.name in ['ASP', 'GLU', 'SER', 'THR', 'TYR']
-                  and atom.element.symbol in ['O', 'N', 'S']):
+            elif (residue.name in ['ASP', 'GLU', 'SER', 'THR', 'TYR'] and
+                  atom.element.symbol in ['O', 'N', 'S']):
                 metal_binder = True
 
             elif residue.name == 'HIS' and atom.element.symbol == 'N':
@@ -252,4 +252,3 @@ class FeatureTopology(md.Topology):
             rings.append([mol.idx_to_md_idx[rd_idx] for rd_idx in ring])
 
         return rings
-

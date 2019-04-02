@@ -62,6 +62,7 @@ class Fingerprinter:
         Ligand fingerprints for each frame.
 
     """
+
     def __init__(self, traj, frames=slice(0, -1, 1),
                  top_path='build/complex.prmtop',
                  ligand_selection='resname LIG',
@@ -344,7 +345,7 @@ class Fingerprinter:
             for tmp_idx, angles in enumerate(candidate_angles):
 
                 if (is_acceptable_angle(angles[0], acceptor_angle, tolerance) and
-                   is_acceptable_angle(angles[1], donor_angle, tolerance)):
+                        is_acceptable_angle(angles[1], donor_angle, tolerance)):
 
                     bonds.append(candidate_bonds[tmp_idx])
 
@@ -714,4 +715,3 @@ class LigandFingerprinter:
             moments.append(np.append(frame_mean, s.moment(frame_values, range(2, n_moments))))
 
         return moments
-

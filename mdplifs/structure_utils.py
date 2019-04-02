@@ -11,7 +11,7 @@ def angle_between_vectors(v1, v2):
 def normalize_vector(vector):
 
     norm = np.linalg.norm(vector)
-    return vector/norm if not norm == 0 else vector
+    return vector / norm if not norm == 0 else vector
 
 
 def is_acceptable_angle(angle, target, tolerance):
@@ -119,4 +119,3 @@ def atoms_to_rdkit_mol(atoms):
     mol.idx_to_md_idx = {rd_idx: idx for idx, rd_idx in idx_map.items()}
 
     return mol
-

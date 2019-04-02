@@ -23,7 +23,7 @@ usage = """mdplifs
 
 Usage:
   mdplifs (<topology> <trajectory>) [<ligand_selection>] [--first=<first> --last=<last> --stride=<stride>]
-  mdplifs -h | --help 
+  mdplifs -h | --help
 
 Arguments:
   topology            System topology (currently only AMBER prmtop supported)
