@@ -99,8 +99,6 @@ class FeatureTopology(md.Topology):
 
         for residue in self.residues:
 
-            # TODO: May need to ensure that only receptor residues
-            # included or provide utility function to access as such
             if residue.is_protein:
                 rings = self.protein_ring_check(residue)
                 if rings:
