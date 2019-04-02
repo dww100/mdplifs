@@ -692,18 +692,18 @@ class LigandFingerprinter:
         # Distances of every atom to the closest atom to the centre in each frame
         closest_atom_to_centre = np.array([frame_ctds[np.argmin(frame_ctds)]
                                            for frame_ctds in ctds])
-        self.csts = self._calc_dist_metric(closest_atom_to_centre)
+        self.csts = self._calculate_distance_difference(closest_atom_to_centre)
 
         # Distances of every atom to the furthest atom to the centre in each frame
         furthest_atom_to_centre = np.array([frame_ctds[np.argmax(frame_ctds)]
                                             for frame_ctds in ctds])
-        self.fcts = self._calc_dist_metric(furthest_atom_to_centre)
+        self.fcts = self._calculate_distance_difference(furthest_atom_to_centre)
 
-        # Distances of every atom to furthest atom from teh furhest atom for the centre
+        # Distances of every atom to furthest atom from the furthest atom for the centre
         furthest_from_furthest_atom = np.array([frame_fcts[np.argmax(frame_fcts)]
-                                                for frame_fcts in furthest_atom_to_centre])
+                                                for frame_fcts in self.fcts])
 
-        self.ftfs = self._calc_dist_metric(furthest_from_furthest_atom)
+        self.ftfs = self._calculate_distance_difference(furthest_from_furthest_atom)
 
     @staticmethod
     def _calculate_metric_moments(traj_metric, n_moments=10):
