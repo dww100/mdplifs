@@ -461,7 +461,6 @@ class Fingerprinter:
         traj_coords = traj.xyz
         top = self.top
         ligand_rings = top.ligand_rings
-        #receptor_rings = top.receptor_rings
         receptor_rings = top.receptor_ring_list()
 
         ring_pairs = itertools.product(receptor_rings, ligand_rings)
