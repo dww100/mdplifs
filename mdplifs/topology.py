@@ -58,11 +58,12 @@ class FeatureTopology(md.Topology):
                     if residue.is_protein:
 
                         (new_atom.positive,
-                         new_atom.negative) = self._is_charged_protein(atom)
+                         new_atom.negative) = self._is_charged_protein(new_atom)
 
                     elif new_atom.index in self.ligand_idxs:
                         (new_atom.positive,
-                         new_atom.negative) = self._is_charged_ligand(atom, charge_tolerance)
+                         new_atom.negative) = self._is_charged_ligand(new_atom,
+                                                                      charge_tolerance)
 
                     new_atom.in_ring = False
                     new_atom.halogen_acceptor = False
@@ -237,7 +238,7 @@ class FeatureTopology(md.Topology):
 
         rings = []
 
-        atom_list = [self.atom(idx) for idx in self.ligand_selection]
+        atom_list = [self.atom(idx) for idx in self.ligand_idxs]
         mol = atoms_to_rdkit_mol(atom_list)
 
         sssr = Chem.GetSSSR(mol)
