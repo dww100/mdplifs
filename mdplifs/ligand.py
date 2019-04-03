@@ -24,10 +24,55 @@ class LigandFingerprinter:
     Characterizing the Chemical Space of ERK2 Kinase Inhibitors Using Descriptors Computed
     from Molecular Dynamics Trajectories
     J. Chem. Inf. Model., 57 (6): 1286-1299. DOI: 10.1021/acs.jcim.7b00048
+
+    Parameters
+    ----------
+    traj  : `mdtraj.Trajectory`
+        Trajectory object containing topology information and coordinates over time.
+    frames : slice, optional, default=slice(0,-1, 1)
+        Which frames of the trajectory should be used, default to all of them.
+    ligand_selection : str_like, optional, default='resname LIG'
+        Selection text (using the mdtraj DSL) used to select ligand atoms.
+    n_moments : int, optional, default=10
+        Number of moments of each distance metric to calculate
+
+    Attributes
+    ----------
+    traj : `mdtraj.Trajectory`
+        Trajectory filtered to contain only the frames and atoms selected for analysis.
+    top : `mdtraj.topology`
+        Ligand topology corresponding to the `ligand_selection` from the input `traj`.
+    ctds : np.array
+        Distances of atoms to centroid of each frame
+    csts : np.array
+        Distances of atoms to closest atom to the centre for each frame
+    fcts : np.array
+        Distances of atoms to furthest atom from centroid of each frame
+    ftfs : np.array
+        Distances of atoms to furthest atom from furthest atom from centroid of each
+        frame
+    ctd_frame_moments :  np.array
+        `n_moments` moments of the distribution of ctds for each frame.
+    cst_frame_moments :  np.array
+        `n_moments` moments of the distribution of csts for each frame.
+    fct_frame_moments :  np.array
+        `n_moments` moments of the distribution of fcts for each frame.
+    ftf_frame_moments :  np.array
+        `n_moments` moments of the distribution of ftfs for each frame.
+    ctd_metrics :  np.array
+        Average across all frames of each of the `n_moments` moments of the ctds.
+    cst_metrics :  np.array
+        Average across all frames of each of the `n_moments` moments of the csts.
+    fct_metrics :  np.array
+        Average across all frames of each of the `n_moments` moments of the fcts.
+    ftf_metrics :  np.array
+        Average across all frames of each of the `n_moments` moments of the ftfs.
+    fingerprint :  np.array
+        Concatenation of the averages of all metrics.
     """
 
     def __init__(self, traj, ligand_selection='resname LIG',
-                 n_moments=10):
+                 frames=slice(0, -1, 1), n_moments=10):
 
         if n_moments < 2:
             raise ValueError('n_moments must be 2 or greater')
@@ -35,13 +80,13 @@ class LigandFingerprinter:
         self.n_moments = n_moments
 
         ligand_atoms = traj.topology.select(ligand_selection)
-        self.traj = traj.atom_slice(ligand_atoms)
+        self.traj = traj[frames].atom_slice(ligand_atoms)
         self.top = self.traj.topology
 
-        self.ctds = None
-        self.csts = None
-        self.fcts = None
-        self.ftfs = None
+        self.ctds = np.array([])
+        self.csts = np.array([])
+        self.fcts = np.array([])
+        self.ftfs = np.array([])
 
         self.calculate_distance_metrics()
 
@@ -59,10 +104,19 @@ class LigandFingerprinter:
         self.fct_metrics = np.array(self.fct_frame_moments).mean(axis=0)
         self.ftf_metrics = np.array(self.ftf_frame_moments).mean(axis=0)
 
+        # TODO: Should be a function
         self.fingerprint = np.concatenate((self.ctd_metrics, self.cst_metrics,
                                            self.fct_metrics, self.ftf_metrics))
 
     def calculate_centre_points(self):
+        """
+        Compute the centre of each frame in `self.traj`.
+
+        Returns
+        -------
+        np.array
+            Array containing centroid for each frame of the trajectory.
+        """
 
         traj = self.traj
 
@@ -74,19 +128,44 @@ class LigandFingerprinter:
         return centres
 
     def _calculate_distance_difference(self, ref_coords):
+        """
+        Calculate distances of each atom in `self.traj` to a reference
+        coordinate in the same frame (provided in `ref_coords`).
+
+        Parameters
+        ----------
+        ref_coords  :  np.array
+            Array containing a set of reference coordinates for each frame in
+            `self.traj`.
+
+        Returns
+        -------
+        np.array
+            Array of distance between each coordinate in each frame of `self.traj`
+            and the corresponding reference coordinate.
+        """
 
         traj = self.traj
 
         metrics = np.zeros((traj.n_frames, traj.n_atoms))
 
         for frame, coords in enumerate(traj.xyz):
-            # Compute distance between each coordinate and reference coordinate
+
             metrics[frame, :] = np.apply_along_axis(distance.euclidean, 1,
                                                     coords, ref_coords[frame])
 
         return metrics
 
     def calculate_distance_metrics(self):
+        """
+        Calculate all shape mertics for each frame in `self.traj`. Metrics are set of all
+        atomic distances from four molecular locations:
+        the molecular centroid (ctd), the closest atom to ctd (cst),
+        the farthest atom to ctd (fct), and the farthest atom to fct (ftf).
+        All of which are stored in corresponding array in the object, i.e.
+        `self.ctds` is an array of ctd values for each frame.
+
+        """
 
         centres = self.calculate_centre_points()
 
@@ -112,11 +191,28 @@ class LigandFingerprinter:
 
     @staticmethod
     def _calculate_metric_moments(traj_metric, n_moments=10):
+        """
+        Calculate the first `n_moments` of the distribution of the metric in the
+        `traj_metric` array for each frame.
+
+        Parameters
+        ----------
+        traj_metric  :  np.array
+            Containing values of metric for each atom in each frame in trajectory.
+        n_moments  :  int
+            Number of moments of distribution of metrics to calculate.
+
+        Returns
+        -------
+            `n_moments` of the distribution of the input metric for each frame
+
+        """
 
         moments = []
 
         for frame_values in traj_metric:
             frame_mean = np.mean(frame_values)
-            moments.append(np.append(frame_mean, s.moment(frame_values, range(2, n_moments))))
+            moments.append(np.append(frame_mean, s.moment(frame_values,
+                                                          range(2, n_moments))))
 
         return moments
