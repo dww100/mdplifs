@@ -72,7 +72,7 @@ class LigandFingerprinter:
     """
 
     def __init__(self, traj, ligand_selection='resname LIG',
-                 frames=slice(0, -1, 1), n_moments=10):
+                 frames=slice(0, -1, 1), n_moments=8):
 
         if n_moments < 2:
             raise ValueError('n_moments must be 2 or greater')
