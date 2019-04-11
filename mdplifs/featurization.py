@@ -96,6 +96,7 @@ class Fingerprinter:
         self.pi_cation_receptor = []
         self.pi_cation_ligand = []
 
+        self.ligand_fingerprinter = None
         self.ligand_fingerprint = []
 
         self.generate_fingerprint()
@@ -123,8 +124,9 @@ class Fingerprinter:
         # TODO: Metal complex interations
         # TODO: Strip double counting of bonds
 
-        self.ligand_fingerprint = LigandFingerprinter(self.traj,
-                                                      ligand_selection=self.ligand_selection)
+        self.ligand_figerprinter = LigandFingerprinter(self.traj,
+                                                       ligand_selection=self.ligand_selection)
+        self.ligand_fingerprint = self.ligand_figerprinter.fingerprint
 
     def get_hbonds(self):
         """
