@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.spatial import distance
-import scipy.stats as s
+from .calculations import describe_distribution
 
 
 class LigandFingerprinter:
@@ -211,8 +211,6 @@ class LigandFingerprinter:
         moments = []
 
         for frame_values in traj_metric:
-            frame_mean = np.mean(frame_values)
-            moments.append(np.append(frame_mean, s.moment(frame_values,
-                                                          range(2, n_moments))))
+            moments.append(describe_distribution(frame_values, n_moments))
 
         return moments

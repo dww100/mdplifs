@@ -2,6 +2,7 @@ import itertools
 import numpy as np
 import mdtraj as md
 from scipy.spatial import distance
+import scipy.stats as s
 from .topology import FeatureTopology
 from .structure_utils import angle_between_vectors, is_acceptable_angle, projection, get_ring_normal
 from .ligand import LigandFingerprinter
