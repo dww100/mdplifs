@@ -5,17 +5,65 @@ from scipy.spatial import distance
 
 
 def angle_between_vectors(v1, v2):
+    """
+    Compute angle between two input vectors.
+
+    Parameters
+    ----------
+    v1  :  array_like
+        First vector.
+    v2
+        Second vector.
+
+    Returns
+    -------
+    float
+        Angle between the two input vectors.
+
+    """
     return np.arccos(np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2)))
 
 
 def normalize_vector(vector):
+    """
+    Return vector of same direction as input but length 1.
+
+    Parameters
+    ----------
+    vector  :  array_like
+        Input vector
+
+    Returns
+    -------
+    np.array
+        Normalized vector.
+
+    """
 
     norm = np.linalg.norm(vector)
     return vector / norm if not norm == 0 else vector
 
 
 def is_acceptable_angle(angle, target, tolerance):
+    """
+    Check if `angle` is within `tolerance` of `target` value.
 
+    Parameters
+    ----------
+    angle  :  float
+        Angle to check.
+    target  :  float
+        Target angle.
+    tolerance  :  float
+        Acceptable deviation from target.
+
+    Returns
+    -------
+    bool:
+        Is `angle` within the `tolerance` of `target`.
+    """
+
+    # TODO: Needs to account for negative angles.
     return target - tolerance < angle < target + tolerance
 
 
@@ -55,16 +103,48 @@ def projection(plane_normal, plane_point, target_point):
 
 
 def get_ring_normal(coords):
+    """
+    Get normal to the plane of the ring containing the atoms with the input
+    coordinates (`coords`). This is done by using the coordinates of the atoms
+    with indexes 0, 2 and 4:
 
-    selected_ring_coords = [coords[x] for x in [0, 2, 4]]
+    vector1 = coords[0] - coords[2]
+    vector2 = coords[4] - coords[0]
+    normal =  vector1 x vector2 / | vector1 x vector2 |
 
-    vector1 = selected_ring_coords[0] - selected_ring_coords[1]
-    vector2 = selected_ring_coords[2] - selected_ring_coords[0]
+    Parameters
+    ----------
+    coords  :  np.array
+        Coordinates (x, y, z) for all atoms in the ring.
+
+    Returns
+    -------
+    np.array
+        Normalized normal to the plane of the ring.
+
+    """
+
+    vector1 = coords[0] - coords[2]
+    vector2 = coords[4] - coords[0]
 
     return normalize_vector(np.cross(vector1, vector2))
 
 
 def remove_duplicate_bonds(iterable):
+    """
+    Remove duplicates for list of paired atom(id)s from the iterable [a,b] treated as
+    equal to [b,a].
+
+    Parameters
+    ----------
+    iterable  :  iterable
+        Contains pairs of atom ids.
+
+    Yields
+    -------
+        Next unique pair of atom ids.
+
+    """
 
     # Create a set for already seen elements
     seen = set()
@@ -80,6 +160,22 @@ def remove_duplicate_bonds(iterable):
 
 
 def atoms_to_rdkit_mol(atoms):
+    """
+    Create an `rdkit.Chem.Mol` from an iterable of `mdtraj` atoms.
+    The atoms should contain bonding information for this to be
+    included in the output Mol.
+
+    Parameters
+    ----------
+    atoms  :  iterable
+        Containing `mdtraj` atoms.
+
+    Returns
+    -------
+    rdkit.Chem.Mol
+        Molecule representation of the input atoms.
+
+    """
 
     editable = Chem.EditableMol(Chem.Mol())
 
@@ -99,6 +195,7 @@ def atoms_to_rdkit_mol(atoms):
 
         rd_idx += 1
 
+    # TODO: Check that this doesn'trely on things monkey patched in `FeatureTopology`
     bond_list = remove_duplicate_bonds(itertools.chain.from_iterable(
         [atom.bonds for atom in atoms]))
 
